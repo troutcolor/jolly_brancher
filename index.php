@@ -26,19 +26,19 @@ function jolly_rancher_load_scripts() {
 }
 
 
-function make_brancher_html(){
+function make_brancher_html($forkword,$submitword,$showattribute){
 	global $post;
  if (is_user_logged_in()) {  
                 $blog_select = "
                 <form id='jollbrancher-fork-form' action='" . get_the_permalink() . "' method='post'>
                 <p>
-                    <label>Which of your blogs would you like to fork this content to?</label><br/>
+                    <label>Which of your blogs would you like to $forkword this content to?</label><br/>
                     <select id='blog-select' name='blog-select'>
                         <option value=''>Select your blog</option>" . create_blogs_dropdown( get_blogs_of_current_user_by_role() ) . "</select>
                 </p>
                   <fieldset id='submit'>
                     <input type='hidden' name='submit' value='1'/>
-                    <input type='submit' value='Submit' />
+                    <input type='submit' value='$submitword' />
                 </fieldset></form>";
                 $blog_select_login_prompt = "";
             } 
@@ -57,9 +57,16 @@ function make_brancher_html(){
                	    $base_title = $post->post_title;
                     $remote_blog = get_remote_blog_info( $_POST['blog-select'] );
                     switch_to_blog($_POST['blog-select']);
+					if ($showattribute==1){
+						$base_content=$base_content . '<div style="width: 100%; display:block; margin: 20px 0; border-left:3px solid #000; padding-left:3px;">Forked from <a href="'.$home_url.'">'.$base_title.'</a></p>';
+					}else {
+						
+						$forkpattern= '/\[(fork).*?\] ?/';
+ 					   $base_content=preg_replace($forkpattern,'',$base_content);
+				}	
                     $forked_post = array(
 						  'post_title'    => 'Fork of ' . $base_title,
-						  'post_content'  => $base_content . '<div style="width: 100%; display:block; margin: 20px 0; border-left:3px solid #000; padding-left:3px;">Forked from <a href="'.$home_url.'">'.$base_title.'</a></p>',
+						  'post_content'  => $base_content ,
 						  'post_status'   => 'draft',						 
 						);
 						 
@@ -93,7 +100,6 @@ function make_brancher_html(){
         return $blog_select;
   
 }
-
 
 function make_post_jolly($content){
 	extract( shortcode_atts( array(
