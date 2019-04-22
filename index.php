@@ -1,4 +1,4 @@
-<?php 
+ <?php 
 /*
 Plugin Name: Jolly Brancher 
 Plugin URI:  https://github.com/
@@ -96,7 +96,12 @@ function make_brancher_html(){
 
 
 function make_post_jolly($content){
-	return $content . make_brancher_html();
+	extract( shortcode_atts( array(
+		'f' => 'Fork',
+		's' => 'Submit',
+		'a'=> 1,
+	), $content ) );
+	return    make_brancher_html($f,$s,$a);
 }
 
 
