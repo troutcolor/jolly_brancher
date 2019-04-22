@@ -26,19 +26,19 @@ function jolly_rancher_load_scripts() {
 }
 
 
-function make_brancher_html(){
+function make_brancher_html($forkword,$submitword,$showattribute){
 	global $post;
  if (is_user_logged_in()) {  
                 $blog_select = "
                 <form id='jollbrancher-fork-form' action='" . get_the_permalink() . "' method='post'>
                 <p>
-                    <label>Which of your blogs would you like to fork this content to?</label><br/>
+                    <label>Which of your blogs would you like to $forkword this content to?</label><br/>
                     <select id='blog-select' name='blog-select'>
                         <option value=''>Select your blog</option>" . create_blogs_dropdown( get_blogs_of_current_user_by_role() ) . "</select>
                 </p>
                   <fieldset id='submit'>
                     <input type='hidden' name='submit' value='1'/>
-                    <input type='submit' value='Submit' />
+                    <input type='submit' value='$submitword' />
                 </fieldset></form>";
                 $blog_select_login_prompt = "";
             } 
@@ -47,7 +47,6 @@ function make_brancher_html(){
                 $blog_select = "<p>To fork this you'll have to <a href='" . wp_login_url(get_the_permalink()) . "'>login</a>.</p>";
             }
            if ($_POST) {
-
                 $form_response = "";
               
                if (is_user_logged_in() && $_POST['blog-select'] ) {               	              
@@ -57,53 +56,44 @@ function make_brancher_html(){
                	    $base_title = $post->post_title;
                     $remote_blog = get_remote_blog_info( $_POST['blog-select'] );
                     switch_to_blog($_POST['blog-select']);
+					if ($showattribute==1){
+						$base_content=$base_content . '<div style="width: 100%; display:block; margin: 20px 0; border-left:3px solid #000; padding-left:3px;">Forked from <a href="'.$home_url.'">'.$base_title.'</a></p>';
+					}else {
+						
+						$forkpattern= '/\[(fork).*?\] ?/';
+ 					   $base_content=preg_replace($forkpattern,'',$base_content);
+				}	
                     $forked_post = array(
 						  'post_title'    => 'Fork of ' . $base_title,
-						  'post_content'  => $base_content . '<div style="width: 100%; display:block; margin: 20px 0; border-left:3px solid #000; padding-left:3px;">Forked from <a href="'.$home_url.'">'.$base_title.'</a></p>',
+						  'post_content'  => $base_content ,
 						  'post_status'   => 'draft',						 
 						);
 						 
 						// Insert the post into the database
 						$destination_id = wp_insert_post( $forked_post );                   
 						$dest_url = get_post_permalink($destination_id);
-
                     if ( $remote_blog ){
                        $form_response .= '<h2>SUCCESS!</h2>';  
 					    $form_response .='<script type="text/javascript">';
 					    $form_response .= 'window.location = "' . $dest_url . '"';
 					    $form_response .= '</script>';
-
                     } else {
                         $form_response .= '<h2>SUCCESS2!</h2>';
 					                   
                     }
-
                     return $form_response;
-
                 } 
                 
                 else {
                     $form_response .= "<h2>CRUSHING DEFEAT!</h2>";                   
-
                     return $form_response;
                 }
             }
                         
-
         return $blog_select;
   
 }
-
-
-function make_post_jolly($content){
-	return $content . make_brancher_html();
-}
-
-
-//add_filter( 'the_content', 'make_post_jolly' );
-add_shortcode( 'fork', 'make_post_jolly' );
-
-
+  
  function create_blogs_dropdown($blogs){
                 $choices = '';
 
@@ -292,3 +282,26 @@ function get_remote_blog_info( $blogID ) {
 				}
 			}
 			new Rational_Meta_Box;
+			
+			
+add_filter( 'the_content', 'fork_the_content_in_the_main_loop' );
+
+function fork_the_content_in_the_main_loop( $content ) {
+
+    // Check if we're inside the main loop.
+    if (   in_the_loop() && is_main_query() ) {
+		//get metabox values
+		$addFork= get_post_meta( get_the_ID(), 'fork_metabox_add-fork-this-button', true );
+		if ($addFork){
+			$attrFork= get_post_meta( get_the_ID(), 'fork-history-attribution-refork', true );
+			
+				$wordFork= get_post_meta( get_the_ID(), 'text-for-fork-fork-duplicate', true );
+				$submitword="Go";
+				 return $content . make_brancher_html($wordFork,$submitword,$attrFork) ;
+				
+		}
+       
+    }
+
+    return $content;
+}
